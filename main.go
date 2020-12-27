@@ -142,7 +142,7 @@ func Print(track *Track, counter int) {
 		beginTime = getClock(beginTime, e.Value.(Talk).Time)
 	}
 
-	if track.afternoon.getTotalTime() < 180 {
+	if track.afternoon.getTotalTime() < track.afternoon.MinLen {
 		beginTime = "4:00PM"
 	}
 	fmt.Printf("%s Networking Event\n", beginTime)
