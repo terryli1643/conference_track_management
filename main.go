@@ -9,7 +9,49 @@ import (
 	"strings"
 )
 
-var talkList = list.New()
+var talkList = TalkList{
+	data: list.New(),
+}
+
+type TalkList struct {
+	data *list.List
+}
+
+func (t TalkList) String() (str string) {
+	for e := t.data.Front(); e != nil; e = e.Next() {
+		str += e.Value.(Talk).String()
+	}
+	return str
+}
+
+type Talk struct {
+	title string
+	time  int
+}
+
+func (t Talk) String() string {
+	return fmt.Sprint(t.time) + " "
+}
+
+type Session struct {
+	talk   *list.List
+	MaxLen int
+	MinLen int
+	Done   bool
+}
+
+func (s Session) String() (str string) {
+	for e := s.talk.Front(); e != nil; e = e.Next() {
+		str += e.Value.(Talk).String()
+	}
+	return str
+}
+
+type Track struct {
+	morning   Session
+	afternoon Session
+	nextDay   *Track
+}
 
 func init() {
 	initTalkList(testInput)
@@ -23,36 +65,6 @@ func main() {
 	}
 	fmt.Printf("%+v", track)
 }
-
-type Talk struct {
-	title string
-	time  int
-}
-
-func (t Talk) String() string {
-	return fmt.Sprint(t.time)
-}
-
-type Session struct {
-	talk   *list.List
-	MaxLen int
-	MinLen int
-	Done   bool
-}
-
-func (s Session) String() (str string) {
-	for e := s.talk.Front(); e != nil; e.Next() {
-		str += e.Value.(Talk).String()
-	}
-	return str
-}
-
-type Track struct {
-	morning   Session
-	afternoon Session
-	nextDay   *Track
-}
-
 func (s Session) set(t Talk) (err error) {
 	//如果插入的talk总时间大于session的最大时间，则先从session中移除比当前talk时间大的talk, 再插入
 	if s.getTotalTime()+t.time > s.MaxLen {
@@ -60,13 +72,13 @@ func (s Session) set(t Talk) (err error) {
 			if e.Value.(Talk).time > t.time {
 				s.talk.Remove(e)
 				putTalkToTalkList(talkList, e.Value.(Talk))
-				fmt.Printf("remove %d from %+v, talks list is : %+v\n", e.Value.(Talk).time, s.talk, talkList)
+				fmt.Printf("remove %d from %+v, talks list is : %+v\n", e.Value.(Talk).time, s, talkList)
 			}
 		}
 	}
 	if s.getTotalTime()+t.time > s.MaxLen {
 		err = errors.New("error")
-		fmt.Printf("session is %+v, talks list is : %+v\n", s.talk, talkList)
+		fmt.Printf("session is %v, talks list is : %+v\n", s, talkList)
 		return err
 	}
 	s.talk.PushBack(t)
@@ -140,26 +152,29 @@ func initTalkList(input []string) {
 		}
 	}
 	fmt.Printf("%+v\n", talkList)
-	fmt.Println("============")
+	fmt.Println("====================================================================")
 	return
 }
 
-func putTalkToTalkList(l *list.List, t Talk) {
-	if l.Len() == 0 {
-		l.PushFront(t)
+func putTalkToTalkList(l TalkList, t Talk) {
+	if l.data.Len() == 0 {
+		l.data.PushFront(t)
 		return
 	}
 
-	for e := l.Front(); e != nil; e = e.Next() {
+	for e := l.data.Front(); e != nil; e = e.Next() {
 		if t.time >= e.Value.(Talk).time {
-			l.InsertBefore(t, e)
+			l.data.InsertBefore(t, e)
+			return
 		}
 	}
+	l.data.PushBack(t)
+	fmt.Printf("push %v to talk list", t)
 }
 
-func plan(talks *list.List) (track *Track, err error) {
+func plan(talks TalkList) (track *Track, err error) {
 	track = newTrack()
-	for e := talks.Front(); e != nil; e = e.Next() {
+	for e := talks.data.Front(); e != nil; e = e.Next() {
 		err = track.set(e.Value.(Talk))
 		if err != nil {
 			break
